@@ -1,6 +1,7 @@
 from src.google_client import search_google
 from src.scoring import filter_relevant_results, calculate_media_score
 from src.report import build_report_html
+from src.telegram_client import send_message
 
 
 def main():
@@ -35,6 +36,9 @@ def main():
     )
     print("\n=== REPORT ===\n")
     print(report_text)
+
+    send_message(report_text)
+    print("\nReport sent to Telegram.")
 
 
 if __name__ == "__main__":
