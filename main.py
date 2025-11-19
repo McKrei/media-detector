@@ -2,43 +2,69 @@ from src.google_client import search_google
 from src.scoring import filter_relevant_results, calculate_media_score
 from src.report import build_report_html
 from src.telegram_client import send_message
+from src.storage import load_last_score, save_score
 
 
-def main():
-    # query = "Сергунин Евгений"
-    query = "Чуян Андрей"
-    google_results = search_google(query, max_results=10, lang="ru")
+TARGETS = [
+    # {
+    #     "name": "Evgenii Sergunin",
+    #     "query": "Евгений Сергунин Валерьевич",
+    #     "extra_keywords": [],
+    #     "lang": "ru",
+    #     "max_results": 30,
+    # },
+    {
+        "name": "Чуян Андрей",
+        "query": "Чуян Андрей",
+        "extra_keywords": ["IT", "инфраструктура", "DevOps", "инженер", "IT-волна", "Debug Skills", "Debug Camp"],
+        "lang": "ru",
+        "max_results": 30,
+    }
+]
 
-    # for idx, result in enumerate(results, start=1):
-    #     print(f"{idx}. {result['title']}\n{result['link']}\n{result['snippet']}\n")
 
-    relevant_results = filter_relevant_results(
-        google_results,
+def run_for_target(target: dict) -> None:
+    name = target["name"]
+    query = target["query"]
+    extra_keywords = target.get("extra_keywords", [])
+    lang = target.get("lang", "ru")
+    max_results = target.get("max_results", 30)
+
+    results = search_google(query=query, max_results=max_results, lang=lang)
+
+    relevant = filter_relevant_results(
+        results=results,
         full_name=query,
-        # extra_keywords=["python", "vk", "разработчик", "developer", "Data Science"],
-        extra_keywords=["IT", "инфраструктура", "DevOps", "инженер", "IT-волна", "Debug Skills", "Debug Camp"],
+        extra_keywords=extra_keywords,
     )
 
     score = calculate_media_score(
-        total_results=len(google_results),
-        relevant_results=len(relevant_results),
+        total_results=len(results),
+        relevant_results=len(relevant),
     )
 
-    print(f"Total results: {len(google_results)}")
-    print(f"Relevant results: {len(relevant_results)}")
-    print(f"Media score: {score}/100")
-
+    last_score = load_last_score(name)
     report_text = build_report_html(
-        target_name=query,
+        target_name=name,
         score=score,
-        relevant_results=relevant_results,
-        total_results=len(google_results),
+        relevant_results=relevant,
+        total_results=len(results),
     )
-    print("\n=== REPORT ===\n")
-    print(report_text)
+
+    if last_score is not None:
+        delta = score - last_score
+        report_text += (
+            f"\nИзменение относительно последнего значения: "
+            f"{delta:+d} (было {last_score})."
+        )
 
     send_message(report_text)
-    print("\nReport sent to Telegram.")
+    save_score(name, score)
+
+
+def main() -> None:
+    for target in TARGETS:
+        run_for_target(target)
 
 
 if __name__ == "__main__":
