@@ -1,5 +1,6 @@
 from src.google_client import search_google
 from src.scoring import filter_relevant_results, calculate_media_score
+from src.report import build_report_html
 
 
 def main():
@@ -25,6 +26,15 @@ def main():
     print(f"Total results: {len(google_results)}")
     print(f"Relevant results: {len(relevant_results)}")
     print(f"Media score: {score}/100")
+
+    report_text = build_report_html(
+        target_name=query,
+        score=score,
+        relevant_results=relevant_results,
+        total_results=len(google_results),
+    )
+    print("\n=== REPORT ===\n")
+    print(report_text)
 
 
 if __name__ == "__main__":
